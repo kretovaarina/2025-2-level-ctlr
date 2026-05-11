@@ -1,5 +1,8 @@
 {
-    "seed_urls": ["https://www.netslova.ru/piesy/"],
+    "seed_urls": [
+        "https://www.netslova.ru/piesy/",
+        "https://www.netslova.ru/irtenev/play/"
+    ],
     "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
     "total_articles_to_find_and_parse": 10,
     "encoding": "utf-8",

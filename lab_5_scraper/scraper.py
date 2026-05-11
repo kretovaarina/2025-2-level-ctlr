@@ -7,6 +7,7 @@ import json
 import pathlib
 import re
 import shutil
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -19,31 +20,31 @@ from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 class IncorrectSeedURLError(Exception):
     """Seed URL does not match standard pattern."""
-    pass
+
 
 class NumberOfArticlesOutOfRangeError(Exception):
     """Number of articles out of range 1..150."""
-    pass
+
 
 class IncorrectNumberOfArticlesError(Exception):
     """Number of articles is not a positive integer."""
-    pass
+
 
 class IncorrectHeadersError(Exception):
     """Headers are not a dictionary."""
-    pass
+
 
 class IncorrectEncodingError(Exception):
     """Encoding is not a string."""
-    pass
+
 
 class IncorrectTimeoutError(Exception):
     """Timeout not in 1..60."""
-    pass
+
 
 class IncorrectVerifyError(Exception):
     """Verify certificate or headless mode is not boolean."""
-    pass
+
 
 
 class Config:
@@ -96,29 +97,33 @@ class Config:
         headless = dto.headless_mode
 
         if not isinstance(seed_urls, list):
-            raise IncorrectSeedURLError("Seed URLs must be a list")
-        pattern = re.compile(r'https?://(www\.)?')
+            raise IncorrectSeedURLError("seed_urls must be a list")
+        url_pattern = re.compile(r'https?://(www\.)?')
         for url in seed_urls:
-            if not isinstance(url, str) or not pattern.match(url):
+            if not isinstance(url, str) or not url_pattern.match(url):
                 raise IncorrectSeedURLError(f"Invalid seed URL: {url}")
 
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError("Total articles must be positive integer")
-        if not 1 <= total <= 150:
-            raise NumberOfArticlesOutOfRangeError("Total articles must be between 1 and 150")
+            raise IncorrectNumberOfArticlesError(
+                "total_articles must be a positive integer")
+        if total > 150:
+            raise NumberOfArticlesOutOfRangeError(
+                "total_articles must not exceed 150")
 
         if not isinstance(headers, dict):
-            raise IncorrectHeadersError("Headers must be a dictionary")
+            raise IncorrectHeadersError("headers must be a dictionary")
         if not isinstance(encoding, str):
-            raise IncorrectEncodingError("Encoding must be a string")
+            raise IncorrectEncodingError("encoding must be a string")
         if not isinstance(timeout, int) or timeout <= 0 or timeout > 60:
-            raise IncorrectTimeoutError("Timeout must be integer between 1 and 60")
+            raise IncorrectTimeoutError("timeout must be integer 1..60")
         if not isinstance(verify, bool):
-            raise IncorrectVerifyError("should_verify_certificate must be boolean")
+            raise IncorrectVerifyError(
+                "should_verify_certificate must be boolean")
         if not isinstance(headless, bool):
             raise IncorrectVerifyError("headless_mode must be boolean")
 
         return seed_urls, total, headers, encoding, timeout, verify, headless
+
 
     def get_seed_urls(self) -> list[str]:
         """
@@ -185,6 +190,7 @@ class Config:
         """
         return self._headless
 
+
 def make_request(url: str, config: Config) -> requests.models.Response:
     """
     Deliver a response from a request with given configuration.
@@ -233,16 +239,38 @@ class Crawler:
         Returns:
             str: Url from HTML
         """
-        return ""
+        href = article_bs.get('href', '')
+        return urljoin('https://www.netslova.ru', href)
 
     def find_articles(self) -> None:
         """
         Find articles.
         """
-        self.urls = self.config.get_seed_urls()
         needed = self.config.get_num_articles()
-        if len(self.urls) > needed:
-            self.urls = self.urls[:needed]
+        visited = set()
+
+        for seed in self.config.get_seed_urls():
+            if len(self.urls) >= needed:
+                break
+            if seed in visited:
+                continue
+            visited.add(seed)
+
+            response = make_request(seed, self.config)
+            if response.status_code != 200:
+                continue
+            soup = BeautifulSoup(response.text, 'html.parser')
+            for link in soup.find_all('a', href=True):
+                if len(self.urls) >= needed:
+                    break
+                href = link['href']
+                full_url = urljoin(seed, href)
+                if (full_url.startswith('https://www.netslova.ru')
+                        and full_url not in visited
+                        and full_url not in self.urls):
+                    if full_url.endswith(('.htm', '.html')):
+                        self.urls.append(full_url)
+                        visited.add(full_url)
 
     def get_search_urls(self) -> list:
         """
@@ -276,6 +304,7 @@ class CrawlerRecursive(Crawler):
         """
         Find number of article urls requested.
         """
+        pass
 
 
 # 4, 6, 8, 10
@@ -309,11 +338,13 @@ class HTMLParser:
         """
         for elem in article_soup(['script', 'style', 'nav', 'header', 'footer']):
             elem.decompose()
+
         content = article_soup.find('pre')
         if not content:
             content = article_soup.find('div', class_='text')
         if not content:
             content = article_soup.find('body')
+
         if content:
             paragraphs = content.find_all(['p', 'pre', 'div'])
             if paragraphs:
@@ -321,6 +352,8 @@ class HTMLParser:
             else:
                 text = content.get_text(strip=True)
             self.article.text = text
+        else:
+            self.article.text = ""
 
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
         """
@@ -385,9 +418,6 @@ def main() -> None:
         article = parser.parse()
         if article and article.text:
             to_raw(article, ASSETS_PATH)
-            print(f"Saved article {idx}")
-        else:
-            print(f"Failed to parse article {idx}")
 
 if __name__ == "__main__":
     main()
