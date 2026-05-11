@@ -17,6 +17,28 @@ from core_utils.config_dto import ConfigDTO
 from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 
+class IncorrectSeedURLError(Exception):
+    """Seed URL does not match standard pattern."""
+
+class NumberOfArticlesOutOfRangeError(Exception):
+    """Number of articles out of range 1..150."""
+
+class IncorrectNumberOfArticlesError(Exception):
+    """Number of articles is not a positive integer."""
+
+class IncorrectHeadersError(Exception):
+    """Headers are not a dictionary."""
+
+class IncorrectEncodingError(Exception):
+    """Encoding is not a string."""
+
+class IncorrectTimeoutError(Exception):
+    """Timeout not in 1..60."""
+
+class IncorrectVerifyError(Exception):
+    """Verify certificate or headless mode is not boolean."""
+
+    
 class Config:
     """
     Class for unpacking and validating configurations.
