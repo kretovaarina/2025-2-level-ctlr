@@ -9,7 +9,7 @@ import re
 import shutil
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from core_utils.article.article import Article
 from core_utils.article.io import to_raw
@@ -174,7 +174,7 @@ class Crawler:
     """
 
     #: Url pattern
-    url_pattern: re.Pattern | str
+    url_pattern: re.Pattern | str = re.compile(r'')
 
     def __init__(self, config: Config) -> None:
         """
