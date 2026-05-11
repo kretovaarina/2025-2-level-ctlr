@@ -19,26 +19,33 @@ from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 class IncorrectSeedURLError(Exception):
     """Seed URL does not match standard pattern."""
+    pass
 
 class NumberOfArticlesOutOfRangeError(Exception):
     """Number of articles out of range 1..150."""
+    pass
 
 class IncorrectNumberOfArticlesError(Exception):
     """Number of articles is not a positive integer."""
+    pass
 
 class IncorrectHeadersError(Exception):
     """Headers are not a dictionary."""
+    pass
 
 class IncorrectEncodingError(Exception):
     """Encoding is not a string."""
+    pass
 
 class IncorrectTimeoutError(Exception):
     """Timeout not in 1..60."""
+    pass
 
 class IncorrectVerifyError(Exception):
     """Verify certificate or headless mode is not boolean."""
+    pass
 
-    
+
 class Config:
     """
     Class for unpacking and validating configurations.
@@ -53,8 +60,7 @@ class Config:
         """
         self._path = path_to_config
         (self._seed_urls, self._total, self._headers, self._encoding,
-         self._timeout, self._verify, self._headless) = self._validate_and_load()
-
+        self._timeout, self._verify, self._headless) = self._validate_and_load()
     def _extract_config_content(self) -> ConfigDTO:
         """
         Get config values.
@@ -64,7 +70,15 @@ class Config:
         """
         with open(self._path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return ConfigDTO(**data)
+        return ConfigDTO(
+            seed_urls=data.get('seed_urls', []),
+            total_articles=data.get('total_articles_to_find_and_parse', 0),
+            headers=data.get('headers', {}),
+            encoding=data.get('encoding', 'utf-8'),
+            timeout=data.get('timeout', 5),
+            should_verify_certificate=data.get('should_verify_certificate', True),
+            headless_mode=data.get('headless_mode', False)
+        )
 
     def _validate_config_content(self) -> None:
         """
@@ -292,13 +306,13 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        for elem in soup(['script', 'style', 'nav', 'header', 'footer']):
+        for elem in article_soup(['script', 'style', 'nav', 'header', 'footer']):
             elem.decompose()
-        content = soup.find('pre')
+        content = article_soup.find('pre')
         if not content:
-            content = soup.find('div', class_='text')
+            content = article_soup.find('div', class_='text')
         if not content:
-            content = soup.find('body')
+            content = article_soup.find('body')
         if content:
             paragraphs = content.find_all(['p', 'pre', 'div'])
             if paragraphs:
