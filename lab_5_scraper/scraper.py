@@ -1,10 +1,6 @@
 """
 Crawler implementation.
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-# pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
 import datetime
 import json
 import pathlib
@@ -34,7 +30,7 @@ class Config:
             path_to_config (pathlib.Path): Path to configuration.
         """
         self._path = path_to_config
-        self._validate_and_load()
+        self._seed_urls, self._total, self._headers, self._encoding, self._timeout, self._verify, self._headless = self._validate_and_load()
 
     def _extract_config_content(self) -> ConfigDTO:
         """
@@ -43,22 +39,23 @@ class Config:
         Returns:
             ConfigDTO: Config values
         """
-
+        with open(self._path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return ConfigDTO(**data)
 
     def _validate_config_content(self) -> None:
         """
         Ensure configuration parameters are not corrupt.
         """
-        with open(self._path_to_config, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        dto = self._extract_config_content()
 
-        seed_urls = data.get('seed_urls', [])
-        total = data.get('total_articles_to_find_and_parse', 0)
-        headers = data.get('headers', {})
-        encoding = data.get('encoding', 'utf-8')
-        timeout = data.get('timeout', 5)
-        verify = data.get('should_verify_certificate', True)
-        headless = data.get('headless_mode', False)
+        seed_urls = dto.seed_urls
+        total = dto.total_articles_to_find_and_parse
+        headers = dto.headers
+        encoding = dto.encoding
+        timeout = dto.timeout
+        verify = dto.should_verify_certificate
+        headless = dto.headless_mode
 
         pattern = re.compile(r'https?://(www\.)?')
         for url in seed_urls:
@@ -81,13 +78,7 @@ class Config:
         if not isinstance(headless, bool):
             raise IncorrectVerifyError("headless_mode must be boolean")
 
-        self._seed_urls = seed_urls
-        self._total = total
-        self._headers = headers
-        self._encoding = encoding
-        self._timeout = timeout
-        self._verify = verify
-        self._headless = headless
+        return seed_urls, total, headers, encoding, timeout, verify, headless
 
     def get_seed_urls(self) -> list[str]:
         """
@@ -239,6 +230,7 @@ class CrawlerRecursive(Crawler):
         Args:
             config (Config): Configuration
         """
+        super().__init__(config)
 
     def find_articles(self) -> None:
         """
@@ -318,15 +310,12 @@ class HTMLParser:
         Returns:
             Article | bool: Article instance, False in case of request error
         """
-        try:
-            response = make_request(self.full_url, self.config)
-            if response.status_code != 200:
-                return False
-            soup = BeautifulSoup(response.text, 'html.parser')
-            self._fill_article_with_text(soup)
-            return self.article
-        except Exception:
+        response = make_request(self.full_url, self.config)
+        if response.status_code != 200:
             return False
+        soup = BeautifulSoup(response.text, 'html.parser')
+        self._fill_article_with_text(soup)
+        return self.article
 
 def prepare_environment(base_path: pathlib.Path | str) -> None:
     """
