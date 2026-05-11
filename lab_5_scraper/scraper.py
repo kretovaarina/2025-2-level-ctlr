@@ -6,10 +6,10 @@ import json
 import pathlib
 import re
 import shutil
-from urllib.parse import urljoin
+
 
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from core_utils.article.article import Article
 from core_utils.article.io import to_raw
@@ -30,7 +30,8 @@ class Config:
             path_to_config (pathlib.Path): Path to configuration.
         """
         self._path = path_to_config
-        self._seed_urls, self._total, self._headers, self._encoding, self._timeout, self._verify, self._headless = self._validate_and_load()
+        self._seed_urls, self._total, self._headers, self._encoding, \
+            self._timeout, self._verify, self._headless = self._validate_and_load()
 
     def _extract_config_content(self) -> ConfigDTO:
         """
@@ -63,9 +64,11 @@ class Config:
                 raise IncorrectSeedURLError(f"Invalid seed URL: {url}")
 
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError("total_articles_to_find_and_parse must be a positive integer")
+            raise IncorrectNumberOfArticlesError(
+                "total_articles_to_find_and_parse must be positive")
         if not 1 <= total <= 150:
-            raise NumberOfArticlesOutOfRangeError("total_articles_to_find_and_parse must be between 1 and 150")
+            raise NumberOfArticlesOutOfRangeError(
+                "total_articles_to_find_and_parse must be between 1 and 150")
 
         if not isinstance(headers, dict):
             raise IncorrectHeadersError("Headers must be a dictionary")
@@ -335,9 +338,11 @@ def main() -> None:
     """
     config = Config(CRAWLER_CONFIG_PATH)
     prepare_environment(ASSETS_PATH)
+
     crawler = Crawler(config)
     crawler.find_articles()
     article_urls = crawler.urls
+    
     for idx, url in enumerate(article_urls, start=1):
         parser = HTMLParser(url, idx, config)
         article = parser.parse()
