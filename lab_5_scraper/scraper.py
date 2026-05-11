@@ -60,7 +60,8 @@ class Config:
         """
         self._path = path_to_config
         (self._seed_urls, self._total, self._headers, self._encoding,
-        self._timeout, self._verify, self._headless) = self._validate_and_load()
+         self._timeout, self._verify, self._headless) = self._validate_and_load()
+
     def _extract_config_content(self) -> ConfigDTO:
         """
         Get config values.
@@ -80,31 +81,31 @@ class Config:
             headless_mode=data.get('headless_mode', False)
         )
 
-    def _validate_config_content(self) -> None:
+    def _validate_and_load(self) -> None:
         """
         Ensure configuration parameters are not corrupt.
         """
         dto = self._extract_config_content()
 
         seed_urls = dto.seed_urls
-        total = dto.total_articles_to_find_and_parse
+        total = dto.total_articles
         headers = dto.headers
         encoding = dto.encoding
         timeout = dto.timeout
         verify = dto.should_verify_certificate
         headless = dto.headless_mode
 
+        if not isinstance(seed_urls, list):
+            raise IncorrectSeedURLError("Seed URLs must be a list")
         pattern = re.compile(r'https?://(www\.)?')
         for url in seed_urls:
-            if not pattern.match(url):
+            if not isinstance(url, str) or not pattern.match(url):
                 raise IncorrectSeedURLError(f"Invalid seed URL: {url}")
 
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError(
-                "total_articles_to_find_and_parse must be positive")
+            raise IncorrectNumberOfArticlesError("Total articles must be positive integer")
         if not 1 <= total <= 150:
-            raise NumberOfArticlesOutOfRangeError(
-                "total_articles_to_find_and_parse must be between 1 and 150")
+            raise NumberOfArticlesOutOfRangeError("Total articles must be between 1 and 150")
 
         if not isinstance(headers, dict):
             raise IncorrectHeadersError("Headers must be a dictionary")
