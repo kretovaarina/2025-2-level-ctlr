@@ -13,37 +13,44 @@ import requests
 from bs4 import BeautifulSoup, Tag
 
 from core_utils.article.article import Article
-from core_utils.article.io import to_raw
+from core_utils.article.io import to_raw, to_meta
 from core_utils.config_dto import ConfigDTO
 from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 
 class IncorrectSeedURLError(Exception):
     """Seed URL does not match standard pattern."""
+    pass
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
     """Number of articles out of range 1..150."""
+    pass
 
 
 class IncorrectNumberOfArticlesError(Exception):
     """Number of articles is not a positive integer."""
+    pass
 
 
 class IncorrectHeadersError(Exception):
     """Headers are not a dictionary."""
+    pass
 
 
 class IncorrectEncodingError(Exception):
     """Encoding is not a string."""
+    pass
 
 
 class IncorrectTimeoutError(Exception):
     """Timeout not in 1..60."""
+    pass
 
 
 class IncorrectVerifyError(Exception):
     """Verify certificate or headless mode is not boolean."""
+    pass
 
 
 
@@ -63,6 +70,7 @@ class Config:
         (self._seed_urls, self._total, self._headers, self._encoding,
          self._timeout, self._verify, self._headless) = self._validate_and_load()
 
+
     def _extract_config_content(self) -> ConfigDTO:
         """
         Get config values.
@@ -81,6 +89,7 @@ class Config:
             should_verify_certificate=data.get('should_verify_certificate', True),
             headless_mode=data.get('headless_mode', False)
         )
+
 
     def _validate_and_load(self) -> None:
         """
@@ -104,21 +113,17 @@ class Config:
                 raise IncorrectSeedURLError(f"Invalid seed URL: {url}")
 
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError(
-                "total_articles must be a positive integer")
+            raise IncorrectNumberOfArticlesError("total_articles must be positive integer")
         if total > 150:
-            raise NumberOfArticlesOutOfRangeError(
-                "total_articles must not exceed 150")
-
+            raise NumberOfArticlesOutOfRangeError("total_articles must not exceed 150")
         if not isinstance(headers, dict):
-            raise IncorrectHeadersError("headers must be a dictionary")
+            raise IncorrectHeadersError("headers must be a dict")
         if not isinstance(encoding, str):
             raise IncorrectEncodingError("encoding must be a string")
         if not isinstance(timeout, int) or timeout <= 0 or timeout > 60:
             raise IncorrectTimeoutError("timeout must be integer 1..60")
         if not isinstance(verify, bool):
-            raise IncorrectVerifyError(
-                "should_verify_certificate must be boolean")
+            raise IncorrectVerifyError("should_verify_certificate must be boolean")
         if not isinstance(headless, bool):
             raise IncorrectVerifyError("headless_mode must be boolean")
 
@@ -134,6 +139,7 @@ class Config:
         """
         return self._seed_urls
 
+
     def get_num_articles(self) -> int:
         """
         Retrieve total number of articles to scrape.
@@ -142,6 +148,7 @@ class Config:
             int: Total number of articles to scrape
         """
         return self._total
+
 
     def get_headers(self) -> dict[str, str]:
         """
@@ -152,6 +159,7 @@ class Config:
         """
         return self._headers
 
+
     def get_encoding(self) -> str:
         """
         Retrieve encoding to use during parsing.
@@ -160,6 +168,7 @@ class Config:
             str: Encoding
         """
         return self._encoding
+
 
     def get_timeout(self) -> int:
         """
@@ -210,6 +219,7 @@ def make_request(url: str, config: Config) -> requests.models.Response:
     )
     response.encoding = config.get_encoding()
     return response
+
 
 class Crawler:
     """
@@ -271,6 +281,7 @@ class Crawler:
                     if full_url.endswith(('.htm', '.html')):
                         self.urls.append(full_url)
                         visited.add(full_url)
+
 
     def get_search_urls(self) -> list:
         """
@@ -336,15 +347,13 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        for elem in article_soup(['script', 'style', 'nav', 'header', 'footer']):
+        for elem in soup(['script', 'style', 'nav', 'header', 'footer']):
             elem.decompose()
-
-        content = article_soup.find('pre')
+        content = soup.find('pre')
         if not content:
-            content = article_soup.find('div', class_='text')
+            content = soup.find('div', class_='text')
         if not content:
-            content = article_soup.find('body')
-
+            content = soup.find('body')
         if content:
             paragraphs = content.find_all(['p', 'pre', 'div'])
             if paragraphs:
@@ -362,7 +371,24 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        pass
+        title_tag = article_soup.find('title')
+        if title_tag:
+            self.article.title = title_tag.get_text(strip=True)
+        else:
+            self.article.title = "NOT FOUND"
+
+        author = None
+        meta_author = article_soup.find('meta', attrs={'name': 'author'})
+        if meta_author and meta_author.get('content'):
+            author = meta_author['content'].strip()
+        else:
+            author_div = article_soup.find('div', class_='author')
+            if author_div:
+                author = author_div.get_text(strip=True)
+        if author:
+            self.article.author = [author]
+        else:
+            self.article.author = ["NOT FOUND"]
 
     def unify_date_format(self, date_str: str) -> datetime.datetime:
         """
@@ -388,7 +414,9 @@ class HTMLParser:
             return False
         soup = BeautifulSoup(response.text, 'html.parser')
         self._fill_article_with_text(soup)
+        self._fill_article_with_meta_information(soup)
         return self.article
+
 
 def prepare_environment(base_path: pathlib.Path | str) -> None:
     """
@@ -401,6 +429,7 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True)
+
 
 def main() -> None:
     """
@@ -418,6 +447,8 @@ def main() -> None:
         article = parser.parse()
         if article and article.text:
             to_raw(article, ASSETS_PATH)
+            to_meta(article, ASSETS_PATH)
+            
 
 if __name__ == "__main__":
     main()

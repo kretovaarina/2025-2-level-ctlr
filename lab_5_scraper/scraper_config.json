@@ -1,10 +1,15 @@
 {
     "seed_urls": [
-        "https://www.netslova.ru/piesy/",
-        "https://www.netslova.ru/irtenev/play/"
+        "https://www.netslova.ru/klubkov/katerina.html",
+        "https://www.netslova.ru/klubkov/chderevo.html",
+        "https://www.netslova.ru/kobrinsky/fantom.html",
+        "https://www.netslova.ru/klubkov/svetopredstavlenie.html",
+        "https://www.netslova.ru/arefieva/mary-stuart.html",
+        "https://www.netslova.ru/belenky/sobol-getto.html",
+        "https://www.netslova.ru/belenky/mazia-igry.html"
     ],
     "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
-    "total_articles_to_find_and_parse": 10,
+    "total_articles_to_find_and_parse": 7,
     "encoding": "utf-8",
     "timeout": 10,
     "should_verify_certificate": true,
