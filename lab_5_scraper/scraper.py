@@ -245,33 +245,10 @@ class Crawler:
         """
         Find articles.
         """
+        self.urls = self.config.get_seed_urls()
         needed = self.config.get_num_articles()
-        seed = self.config.get_seed_urls()[0]
-        response = make_request(seed, self.config)
-        if not response.ok:
-            return
-        soup = BeautifulSoup(response.text, "html.parser")
-        author_links = set()
-        for link in soup.find_all("a", href=True):
-            href = link["href"]
-            full_url = urljoin(seed, href)
-            if full_url.startswith("https://www.netslova.ru") and "/play/" in full_url:
-                author_links.add(full_url)
-        for author_url in author_links:
-            if len(self.urls) >= needed:
-                break
-            resp = make_request(author_url, self.config)
-            if not resp.ok:
-                continue
-            soup_author = BeautifulSoup(resp.text, "html.parser")
-            for link in soup_author.find_all("a", href=True):
-                if len(self.urls) >= needed:
-                    break
-                href = link["href"]
-                full_url = urljoin(author_url, href)
-                if full_url.endswith((".htm", ".html")) and full_url not in self.urls:
-                    self.urls.append(full_url)
-
+        if len(self.urls) > needed:
+            self.urls = self.urls[:needed]
 
     def get_search_urls(self) -> list:
         """

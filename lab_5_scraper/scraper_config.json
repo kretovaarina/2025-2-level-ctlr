@@ -1,12 +1,36 @@
 {
     "seed_urls": [
-        "https://www.netslova.ru/piesy/"
+        "https://www.netslova.ru/irtenev/play/izobretatel.htm",
+        "https://www.netslova.ru/irtenev/play/muzhik.htm",
+        "https://www.netslova.ru/irtenev/play/schastlivaya_semya.htm",
+        "https://www.netslova.ru/irtenev/play/rak.htm",
+        "https://www.netslova.ru/irtenev/play/kot.htm",
+        "https://www.netslova.ru/irtenev/play/sobaka.htm",
+        "https://www.netslova.ru/irtenev/play/svinya.htm",
+        "https://www.netslova.ru/irtenev/play/korova.htm",
+        "https://www.netslova.ru/irtenev/play/kloun.htm",
+        "https://www.netslova.ru/irtenev/play/poet.htm",
+        "https://www.netslova.ru/bahram/play/1.htm",
+        "https://www.netslova.ru/bahram/play/2.htm",
+        "https://www.netslova.ru/bahram/play/3.htm",
+        "https://www.netslova.ru/zhdanov/play/1.htm",
+        "https://www.netslova.ru/zhdanov/play/2.htm",
+        "https://www.netslova.ru/zhdanov/play/3.htm",
+        "https://www.netslova.ru/kopylova/play/1.htm",
+        "https://www.netslova.ru/kopylova/play/2.htm",
+        "https://www.netslova.ru/kryukov/play/1.htm",
+        "https://www.netslova.ru/kryukov/play/2.htm",
+        "https://www.netslova.ru/oleg/play/1.htm",
+        "https://www.netslova.ru/oleg/play/2.htm",
+        "https://www.netslova.ru/smirnov/play/1.htm",
+        "https://www.netslova.ru/smirnov/play/2.htm",
+        "https://www.netslova.ru/klubkov/katerina.html"
     ],
     "headers": {
         "User-Agent": "Mozilla/5.0",
         "Cookie": "_ga=GA1.2.123456789.123456789; sessionid=test"
     },
-    "total_articles_to_find_and_parse": 100,
+    "total_articles_to_find_and_parse": 25,
     "encoding": "windows-1251",
     "timeout": 10,
     "should_verify_certificate": true,
