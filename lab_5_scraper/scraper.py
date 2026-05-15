@@ -78,7 +78,7 @@ class Config:
         Returns:
             ConfigDTO: Config values
         """
-        with open(self._path, 'r', encoding='utf-8') as f:
+        with open(self.path_to_config, 'r', encoding='utf-8') as f:
             return json.load(f)
 
 
