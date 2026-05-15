@@ -88,37 +88,36 @@ class Config:
         """
         data = self._extract_config_content()
 
-        seed_urls = data.get('seed_urls', [])
-        total = data.get('total_articles_to_find_and_parse', 0)
-        headers = data.get('headers', {})
-        encoding = data.get('encoding', 'utf-8')
-        timeout = data.get('timeout', 5)
-        verify = data.get('should_verify_certificate', True)
-        headless = data.get('headless_mode', False)
+        seed_urls = data.get("seed_urls", [])
+        total = data.get("total_articles_to_find_and_parse", 0)
+        headers = data.get("headers", {})
+        encoding = data.get("encoding", "utf-8")
+        timeout = data.get("timeout", 5)
+        verify = data.get("should_verify_certificate", True)
+        headless = data.get("headless_mode", False)
 
         if not isinstance(seed_urls, list):
             raise IncorrectSeedURLError("seed_urls must be a list")
-        url_pattern = re.compile(r'https?://(www\.)?')
+        url_pattern = re.compile(r"https?://(www\.)?")
         for url in seed_urls:
             if not isinstance(url, str) or not url_pattern.match(url):
                 raise IncorrectSeedURLError(f"Invalid seed URL: {url}")
 
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError("total_articles must be positive integer")
+            raise IncorrectNumberOfArticlesError("total_articles must be positive")
         if total > 150:
             raise NumberOfArticlesOutOfRangeError("total_articles must not exceed 150")
 
         if not isinstance(headers, dict):
-            raise IncorrectHeadersError("headers must be a dict")
+            raise IncorrectHeadersError("headers must be dict")
         if not isinstance(encoding, str):
-            raise IncorrectEncodingError("encoding must be a string")
+            raise IncorrectEncodingError("encoding must be string")
         if not isinstance(timeout, int) or timeout <= 0 or timeout > 60:
-            raise IncorrectTimeoutError("timeout must be integer 1..60")
+            raise IncorrectTimeoutError("timeout 1..60")
         if not isinstance(verify, bool):
-            raise IncorrectVerifyError("should_verify_certificate must be boolean")
+            raise IncorrectVerifyError("should_verify_certificate must be bool")
         if not isinstance(headless, bool):
-            raise IncorrectVerifyError("headless_mode must be boolean")
-
+            raise IncorrectVerifyError("headless_mode must be bool")
 
     def get_seed_urls(self) -> list[str]:
         """
@@ -247,9 +246,32 @@ class Crawler:
         Find articles.
         """
         needed = self.config.get_num_articles()
-        self.urls = self.config.get_seed_urls()
-        if len(self.urls) > needed:
-            self.urls = self.urls[:needed]
+        seed = self.config.get_seed_urls()[0]
+        response = make_request(seed, self.config)
+        if not response.ok:
+            return
+        soup = BeautifulSoup(response.text, "html.parser")
+        author_links = set()
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            full_url = urljoin(seed, href)
+            if full_url.startswith("https://www.netslova.ru") and "/play/" in full_url:
+                author_links.add(full_url)
+        for author_url in author_links:
+            if len(self.urls) >= needed:
+                break
+            resp = make_request(author_url, self.config)
+            if not resp.ok:
+                continue
+            soup_author = BeautifulSoup(resp.text, "html.parser")
+            for link in soup_author.find_all("a", href=True):
+                if len(self.urls) >= needed:
+                    break
+                href = link["href"]
+                full_url = urljoin(author_url, href)
+                if full_url.endswith((".htm", ".html")) and full_url not in self.urls:
+                    self.urls.append(full_url)
+
 
     def get_search_urls(self) -> list:
         """
@@ -315,17 +337,17 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        for elem in article_soup(['script', 'style', 'nav', 'header', 'footer']):
+        for elem in article_soup(["script", "style", "nav", "header", "footer"]):
             elem.decompose()
-        content = article_soup.find('pre')
+        content = article_soup.find("pre")
         if not content:
-            content = article_soup.find('div', class_='text')
+            content = article_soup.find("div", class_="text")
         if not content:
-            content = article_soup.find('body')
+            content = article_soup.find("body")
         if content:
-            paragraphs = content.find_all(['p', 'pre', 'div'])
+            paragraphs = content.find_all(["p", "pre", "div"])
             if paragraphs:
-                text = '\n\n'.join(p.get_text(strip=True) for p in paragraphs)
+                text = "\n\n".join(p.get_text(strip=True) for p in paragraphs)
             else:
                 text = content.get_text(strip=True)
             self.article.text = text
@@ -339,24 +361,21 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        title_tag = article_soup.find('title')
+        title_tag = article_soup.find("title")
         if title_tag:
             self.article.title = title_tag.get_text(strip=True)
         else:
             self.article.title = "NOT FOUND"
 
-        author = None
-        meta_author = article_soup.find('meta', attrs={'name': 'author'})
-        if meta_author and meta_author.get('content'):
-            author = meta_author['content'].strip()
+        meta_author = article_soup.find("meta", attrs={"name": "author"})
+        if meta_author and meta_author.get("content"):
+            self.article.author = [meta_author["content"].strip()]
         else:
-            author_div = article_soup.find('div', class_='author')
+            author_div = article_soup.find("div", class_="author")
             if author_div:
-                author = author_div.get_text(strip=True)
-        if author:
-            self.article.author = [author]
-        else:
-            self.article.author = ["NOT FOUND"]
+                self.article.author = [author_div.get_text(strip=True)]
+            else:
+                self.article.author = ["NOT FOUND"]
 
     def unify_date_format(self, date_str: str) -> datetime.datetime:
         """
@@ -381,7 +400,7 @@ class HTMLParser:
         response = make_request(self.full_url, self.config)
         if not response.ok:
             return False
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         self._fill_article_with_text(soup)
         self._fill_article_with_meta_information(soup)
         return self.article
@@ -418,6 +437,8 @@ def main() -> None:
             to_raw(article)
             to_meta(article)
             print(f"Saved article {idx}: {url}")
+        else:
+            print(f"Failed to parse {url}")
 
     print(f"Done. {len(article_urls)} articles saved.")
 
