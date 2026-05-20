@@ -53,7 +53,7 @@ Project Timeline
    1. Short summary: Your code can automatically process raw texts from
       previous step, make point-of-speech tagging and basic
       morphological analysis.
-   2. Deadline: **TBD**.
+   2. Deadline: **June, 1**.
    3. Format: each student works in their own PR.
    4. Dataset volume: 100 articles.
    5. Design document: :ref:`pipeline-label`.
@@ -65,18 +65,24 @@ Lectures history
 +------------+---------------------+--------------------------------------------------------------+
 | Date       | Lecture topic       | Important links                                              |
 +============+=====================+==============================================================+
-| 06.04.2024 | Lecture:            | Lab no. 5 description                                        |
+| 06.04.2024 | Lecture:            | N/A                                                          |
 |            | Introduction to     |                                                              |
 |            | technical track.    |                                                              |
 |            | 3rd party libraries.|                                                              |
 +------------+---------------------+--------------------------------------------------------------+
-| 13.04.2024 | Lecture:            | Lab no. 5 description                                        |
+| 13.04.2024 | Lecture:            | `Листинг <./seminars/seminar_04_13_2024/try_requests.py>`__. |
 |            | Headers. HTML       |                                                              |
 |            | structure.          |                                                              |
 +------------+---------------------+--------------------------------------------------------------+
 | 13.04.2024 | Seminar: Local      | N/A                                                          |
 |            | setup. Choose       |                                                              |
 |            | website.            |                                                              |
++------------+---------------------+--------------------------------------------------------------+
+| 20.04.2024 | Lecture: Search in  | `Листинг <./seminars/seminar_04_20_2024/try_bs.py>`__.       |
+|            | HTML page.          |                                                              |
++------------+---------------------+--------------------------------------------------------------+
+| 20.04.2024 | Seminar: `requests`:| N/A                                                          |
+|            | install, API.       |                                                              |
 +------------+---------------------+--------------------------------------------------------------+
 
 
